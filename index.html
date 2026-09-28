@@ -1,0 +1,799 @@
+<title>Cipher Vault Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Chakra+Petch:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  color-scheme:dark;
+  --navy:#0b1325; --navy-2:#111c33; --navy-3:#172544; --line:#243760; --line-2:#33508a;
+  --cyan:#00f2fe; --cyan-d:#00a9b3; --gold:#ffb703; --gold-d:#c98a00; --red:#ff3b5c; --purple:#b04dff; --green:#10d98a;
+  --ink:#eaf2ff; --ink-2:#a9b8d6; --muted:#7485a8;
+  --display:"Russo One","Chakra Petch",ui-sans-serif,system-ui,sans-serif;
+  --ui:"Chakra Petch",ui-sans-serif,system-ui,sans-serif;
+  --body:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--navy);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+input,select,textarea{font:inherit;color:var(--ink);background:#08101f;border:1px solid var(--line-2);border-radius:8px;padding:8px 10px;width:100%}
+textarea{resize:vertical}
+
+/* ===== screens (spec) ===== */
+.screen{position:fixed;inset:0;width:100vw;height:100vh;display:none;overflow:hidden;
+  padding:calc(10px + env(safe-area-inset-top,0px)) 16px calc(10px + env(safe-area-inset-bottom,0px));
+  background:radial-gradient(ellipse at 50% -10%,rgba(0,242,254,.16),transparent 55%),radial-gradient(ellipse at 110% 110%,rgba(255,183,3,.08),transparent 50%),var(--navy)}
+.screen.active{display:flex;flex-direction:column}
+.screen::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,242,254,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(0,242,254,.045) 1px,transparent 1px);background-size:40px 40px;mask-image:linear-gradient(to bottom,#000,transparent 85%)}
+.screen > *{position:relative}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;padding:10px 18px;font-family:var(--ui);font-weight:700;font-size:15px;letter-spacing:.04em;text-transform:uppercase;background:var(--navy-3);border:1px solid var(--line-2);color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--cyan);box-shadow:0 0 14px rgba(0,242,254,.25)}
+.btn.cyan{background:linear-gradient(180deg,#3ff7ff,#00b8c9);color:#021a22;border:0;box-shadow:0 0 22px rgba(0,242,254,.35)}
+.btn.gold{background:linear-gradient(180deg,#ffd25a,#e59b00);color:#261800;border:0;box-shadow:0 0 18px rgba(255,183,3,.3)}
+.btn.red{background:linear-gradient(180deg,#ff5f7a,#d11f41);color:#fff;border:0}
+.btn.sm{padding:6px 11px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.45}
+.hint{color:var(--muted);font-size:13px}
+.lbl{display:block;font-family:var(--ui);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:6px}
+
+/* ===== setup ===== */
+#screen-setup{align-items:center}
+.setup-top{width:100%;display:flex;justify-content:flex-end}
+.setup-main{flex:1;min-height:0;width:min(920px,100%);display:flex;flex-direction:column;justify-content:center;gap:clamp(8px,2vh,18px);overflow-y:auto;padding-block:4px}
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px}
+.emblem{width:clamp(70px,13vh,120px);height:auto;filter:drop-shadow(0 0 18px rgba(0,242,254,.45))}
+.title{font-family:var(--display);font-size:clamp(26px,5.4vh,52px);line-height:1;margin:0;letter-spacing:.03em;text-transform:uppercase;text-wrap:balance;
+  background:linear-gradient(180deg,#ffffff 0%,#cfe0ff 45%,#7f95bf 55%,#e6efff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 #0a1a3a) drop-shadow(0 0 16px rgba(0,242,254,.35))}
+.subtitle{font-family:var(--ui);font-weight:700;letter-spacing:.35em;text-transform:uppercase;color:var(--cyan);font-size:clamp(12px,1.9vh,16px);text-shadow:0 0 12px rgba(0,242,254,.6)}
+.mapel{color:var(--gold);font-family:var(--ui);font-weight:600;font-size:clamp(13px,1.9vh,16px)}
+.setup-card{background:linear-gradient(180deg,rgba(23,37,68,.92),rgba(11,19,37,.92));border:1px solid var(--line-2);border-radius:16px;padding:clamp(12px,2.2vh,22px);box-shadow:0 0 0 1px rgba(0,242,254,.12) inset,0 20px 40px rgba(0,0,0,.35);display:grid;grid-template-columns:220px 1fr;gap:18px}
+@media (max-width:700px){.setup-card{grid-template-columns:1fr}}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{width:40px;height:40px;border-radius:9px;background:var(--navy-3);border:1px solid var(--line-2);font-size:22px;font-weight:700}
+.stepper output{font-family:var(--display);font-size:30px;min-width:46px;text-align:center;color:var(--gold)}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.team-grid .ti{display:flex;align-items:center;gap:8px}
+.team-grid i{width:12px;height:12px;border-radius:3px;flex:none;box-shadow:0 0 8px currentColor}
+.enter{font-size:clamp(16px,2.4vh,20px);padding:clamp(10px,1.8vh,16px) 28px;width:100%}
+.setup-foot{text-align:center;color:var(--muted);font-size:12px;padding-top:4px}
+.guru-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(11,19,37,.7);border:1px solid var(--line-2);border-radius:999px;padding:6px 12px;font-family:var(--ui);font-weight:700;font-size:12px;letter-spacing:.08em;color:var(--ink-2)}
+.guru-btn:hover{color:var(--gold);border-color:var(--gold)}
+
+/* ===== arena ===== */
+.a-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-bottom:8px}
+.a-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.a-brand svg{width:44px;height:44px;flex:none}
+.a-brand b{font-family:var(--display);font-size:clamp(14px,2.2vh,20px);letter-spacing:.04em;text-transform:uppercase;display:block;line-height:1.05}
+.a-brand small{color:var(--cyan);font-family:var(--ui);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.timer-wrap{display:flex;align-items:center;gap:10px}
+.timer{font-family:var(--mono);font-weight:700;font-size:clamp(30px,6vh,56px);line-height:1;padding:4px 18px;border-radius:12px;background:#050b18;border:2px solid var(--cyan);color:var(--cyan);text-shadow:0 0 14px rgba(0,242,254,.7);box-shadow:0 0 20px rgba(0,242,254,.25) inset;font-variant-numeric:tabular-nums}
+.timer.danger{color:var(--red);border-color:var(--red);text-shadow:0 0 14px rgba(255,59,92,.8);animation:blink 1s steps(2) infinite}
+.timer.paused{opacity:.55}
+@keyframes blink{50%{opacity:.35}}
+.a-tools{display:flex;gap:8px;align-items:center}
+.icon-btn{width:52px;height:52px;border-radius:12px;display:grid;place-items:center;background:var(--navy-3);border:1px solid var(--line-2)}
+.icon-btn.big{width:60px;height:60px;border:2px solid var(--cyan);box-shadow:0 0 16px rgba(0,242,254,.3)}
+.icon-btn.big.off{border-color:var(--muted);box-shadow:none}
+.icon-btn:hover{border-color:var(--gold)}
+.a-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(190px,18vw,260px);gap:12px}
+.vgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));gap:clamp(5px,1vh,10px);min-height:0}
+.vault{position:relative;border-radius:12px;background:linear-gradient(160deg,#16264a 0%,#0c1630 100%);border:2px solid var(--lc);box-shadow:0 0 12px color-mix(in srgb,var(--lc) 45%,transparent),0 0 0 1px rgba(255,255,255,.04) inset;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:0;overflow:hidden;padding:4px;transition:transform .12s,box-shadow .2s}
+.vault::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.07) 50%,transparent 65%);pointer-events:none}
+.vault:hover:not(:disabled){transform:translateY(-2px) scale(1.02);box-shadow:0 0 22px var(--lc)}
+.vault .vn{font-family:var(--ui);font-weight:700;font-size:clamp(10px,1.7vh,15px);letter-spacing:.14em;color:var(--ink-2)}
+.vault .vnum{font-family:var(--display);font-size:clamp(18px,4.4vh,40px);line-height:1;color:#fff;text-shadow:0 0 12px var(--lc)}
+.vault .vp{font-family:var(--ui);font-weight:700;font-size:clamp(10px,1.6vh,14px);color:var(--lc);letter-spacing:.06em}
+.vault.l1{--lc:var(--cyan)} .vault.l2{--lc:var(--gold)} .vault.l3{--lc:#ff4d8d}
+.vault.l3{background:linear-gradient(160deg,#2a1640 0%,#140c26 100%)}
+.vault.open{background:linear-gradient(160deg,#2a2206,#0f0c02);border-color:var(--gold);box-shadow:0 0 10px rgba(255,183,3,.35);cursor:default}
+.vault.open svg{width:clamp(18px,3.4vh,32px);height:auto}
+.vault .team-badge{font-family:var(--ui);font-weight:700;font-size:clamp(9px,1.4vh,12px);padding:1px 8px;border-radius:999px;background:var(--tc);color:#08101f;max-width:95%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.board{min-height:0;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,rgba(23,37,68,.85),rgba(11,19,37,.85));border:1px solid var(--line-2);border-radius:14px;padding:10px}
+.board h3{margin:0;font-family:var(--ui);font-weight:700;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);text-align:center}
+.board .list{display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.brow{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;background:#0a1328;border:1px solid var(--line);border-left:4px solid var(--tc)}
+.brow .r{font-family:var(--display);color:var(--gold);font-size:15px}
+.brow .n{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow .s{font-family:var(--mono);font-weight:700;font-size:18px;color:var(--cyan);font-variant-numeric:tabular-nums}
+.brow.bump{animation:bump .6s}
+@keyframes bump{30%{transform:scale(1.06);background:#11325a}}
+.board .stat{margin-top:auto;font-size:12px;color:var(--ink-2);text-align:center;font-family:var(--ui);letter-spacing:.06em}
+.legend{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;font-size:11px;font-family:var(--ui);color:var(--ink-2)}
+.legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;background:var(--c);vertical-align:-1px}
+@media (max-width:820px){
+  .a-body{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+  .board{order:-1;padding:6px}.board h3,.board .stat,.legend{display:none}
+  .board .list{flex-direction:row;overflow-x:auto}.brow{min-width:130px;padding:4px 8px}
+  .vgrid{grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr))}
+  .icon-btn{width:44px;height:44px}.icon-btn.big{width:48px;height:48px}
+}
+
+/* ===== overlays / modals ===== */
+.overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(3,7,16,.84);backdrop-filter:blur(4px)}
+.modal{width:min(880px,100%);max-height:calc(100vh - 24px);display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,#14223f,#0b1325);border:2px solid var(--cyan);border-radius:18px;padding:clamp(12px,2vh,22px);box-shadow:0 0 40px rgba(0,242,254,.3);overflow:hidden;animation:pop .22s ease-out}
+.modal.gold{border-color:var(--gold);box-shadow:0 0 40px rgba(255,183,3,.25)}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:none;opacity:1}}
+.m-title{font-family:var(--display);font-size:clamp(20px,3.6vh,32px);margin:0;letter-spacing:.04em;text-align:center;color:#fff;text-shadow:0 0 14px var(--cyan)}
+.m-sub{text-align:center;color:var(--ink-2);font-size:13px;font-family:var(--ui);letter-spacing:.08em;text-transform:uppercase}
+.team-pick{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.tp{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;background:#0a1328;border:2px solid var(--line-2);font-family:var(--ui);font-weight:700;font-size:14px}
+.tp i{width:10px;height:10px;border-radius:50%;background:var(--tc)}
+.tp[aria-pressed="true"]{border-color:var(--tc);box-shadow:0 0 12px var(--tc);background:#10203f}
+.pw{font-family:var(--mono);font-weight:700;font-size:clamp(20px,3.8vh,32px);text-align:center;letter-spacing:.12em;padding:10px;border:2px solid var(--cyan);background:#050b18;color:var(--cyan);text-transform:uppercase}
+.kbd{display:flex;flex-direction:column;gap:clamp(4px,.8vh,7px);min-height:0}
+.kr{display:flex;gap:clamp(3px,.6vw,7px);justify-content:center}
+.key{flex:1 1 0;max-width:68px;height:clamp(34px,6.2vh,54px);border-radius:9px;background:linear-gradient(180deg,#1e3160,#142348);border:1px solid var(--line-2);box-shadow:0 3px 0 #08112a;font-family:var(--ui);font-weight:700;font-size:clamp(14px,2.4vh,20px)}
+.key:active{transform:translateY(2px);box-shadow:0 1px 0 #08112a}
+.key.wide{max-width:none;flex:2 1 0}.key.xwide{max-width:none;flex:6 1 0}
+.key.act{background:linear-gradient(180deg,#ffd25a,#e59b00);color:#261800;border:0}
+.key.warn{background:linear-gradient(180deg,#3a2140,#261530)}
+.kbd.bin .key{max-width:none;height:clamp(54px,11vh,90px);font-size:clamp(26px,5vh,40px)}
+.m-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.m-actions .btn{min-width:160px}
+.shake{animation:shake .5s}
+@keyframes shake{15%,55%{transform:translateX(-12px)}35%,75%{transform:translateX(12px)}}
+
+.fx{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;gap:10px;cursor:pointer}
+.fx.ok{background:radial-gradient(circle at 50% 45%,rgba(16,217,138,.95),rgba(0,120,110,.96) 55%,rgba(2,40,44,.98))}
+.fx.no{background:radial-gradient(circle at 50% 45%,rgba(200,20,50,.95),rgba(110,0,24,.97) 55%,rgba(30,0,8,.98))}
+.fx h2{font-family:var(--display);font-size:clamp(38px,11vh,110px);margin:0;line-height:.95;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.25),0 0 30px rgba(255,255,255,.5);text-wrap:balance}
+.fx h3{font-family:var(--display);font-size:clamp(20px,5vh,48px);margin:0;color:#fff}
+.fx .pts{font-family:var(--display);font-size:clamp(30px,8vh,80px);color:var(--gold);text-shadow:0 0 22px rgba(255,183,3,.8)}
+.fx p{font-family:var(--ui);font-weight:700;font-size:clamp(16px,2.8vh,24px);margin:0;color:#fff;letter-spacing:.06em}
+.fx.no .inner{animation:shake .6s}
+.fx .inner{display:flex;flex-direction:column;align-items:center;gap:10px;animation:zoom .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes zoom{from{transform:scale(.6);opacity:0}to{transform:none;opacity:1}}
+#confetti{position:fixed;inset:0;z-index:80;pointer-events:none;width:100vw;height:100vh}
+
+.keylist{overflow:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px;min-height:0}
+.kl{display:grid;grid-template-columns:40px 1fr;gap:8px;padding:6px 9px;border-radius:8px;background:#0a1328;border:1px solid var(--line);font-size:13px}
+.kl b{font-family:var(--mono);color:var(--gold)}
+.kl .a{font-family:var(--mono);font-weight:700;color:var(--cyan)}
+.kl.done{opacity:.5}
+.pin{display:flex;gap:10px;justify-content:center}
+.pin input{max-width:220px;text-align:center;font-family:var(--mono);font-size:28px;letter-spacing:.4em}
+.numpad{display:grid;grid-template-columns:repeat(3,72px);gap:8px;justify-content:center}
+.numpad .key{max-width:none;height:54px}
+
+/* ===== gameover ===== */
+#screen-gameover{align-items:center;justify-content:center;gap:clamp(8px,2vh,18px)}
+.go-title{font-family:var(--display);font-size:clamp(30px,7vh,70px);margin:0;text-align:center;color:var(--gold);text-shadow:0 0 26px rgba(255,183,3,.6)}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:clamp(8px,2vw,22px);width:min(760px,100%);height:clamp(180px,40vh,360px)}
+.pod{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;min-width:0}
+.pod .nm{font-family:var(--display);font-size:clamp(14px,2.6vh,24px);text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pod .sc{font-family:var(--mono);font-weight:700;color:var(--cyan);font-size:clamp(14px,2.4vh,22px)}
+.pod .blk{width:100%;border-radius:12px 12px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:8px;font-family:var(--display);font-size:clamp(30px,7vh,64px);color:#261800;
+  background:linear-gradient(180deg,#ffe28a,#ffb703 40%,#a86f00);box-shadow:0 0 30px rgba(255,183,3,.35)}
+.pod.p2 .blk{background:linear-gradient(180deg,#f2f6ff,#b8c4dc 45%,#6d7a96);color:#1a2236}
+.pod.p3 .blk{background:linear-gradient(180deg,#ffc79a,#d9803a 45%,#7a3f12);color:#2a1300}
+.pod .crown{font-size:clamp(22px,4vh,40px);line-height:1}
+.go-table{width:min(620px,100%);display:grid;gap:5px}
+.go-table .brow{padding:6px 12px}
+.go-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+/* ===== teacher dashboard ===== */
+#screen-teacher{padding-inline:12px}
+.t-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.t-bar h2{font-family:var(--display);font-size:18px;margin:0 8px 0 4px;letter-spacing:.04em;color:var(--gold)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{padding:8px 14px;border-radius:9px;background:var(--navy-3);border:1px solid var(--line-2);font-family:var(--ui);font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.tab[aria-selected="true"]{background:var(--cyan);color:#021a22;border-color:var(--cyan)}
+.t-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.t-body{flex:1;min-height:0;overflow:auto;padding-top:12px}
+.preview{display:grid;gap:16px;justify-items:center;padding-bottom:20px}
+.pscale{position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.5);border-radius:2px}
+.pscale > .page{position:absolute;top:0;left:0;transform-origin:0 0}
+.ed{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:start;padding-bottom:30px}
+@media (max-width:980px){.ed{grid-template-columns:1fr}}
+.panel{background:linear-gradient(180deg,rgba(23,37,68,.9),rgba(11,19,37,.9));border:1px solid var(--line-2);border-radius:14px;padding:14px;display:grid;gap:10px}
+.panel h3{margin:0;font-family:var(--ui);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:14px;color:var(--gold)}
+.qrow{display:grid;grid-template-columns:62px minmax(0,1fr) 130px minmax(0,220px);gap:8px;align-items:start;padding:8px;border-radius:10px;background:#0a1328;border:1px solid var(--line);border-left:4px solid var(--lc)}
+.qrow.l1{--lc:var(--cyan)}.qrow.l2{--lc:var(--gold)}.qrow.l3{--lc:#ff4d8d}
+.qrow .no{font-family:var(--display);font-size:18px;color:var(--lc)}
+.qrow .no small{display:block;font-family:var(--ui);font-size:11px;color:var(--muted)}
+.qrow textarea{min-height:58px;font-size:13px}
+.qrow .kc input{font-family:var(--mono);font-weight:700;color:var(--cyan)}
+.qrow .kc .hint{font-size:11px}
+@media (max-width:760px){.qrow{grid-template-columns:50px 1fr}.qrow textarea{grid-column:2}.qrow select,.qrow .kc{grid-column:2}}
+.qhead{display:grid;grid-template-columns:62px minmax(0,1fr) 130px minmax(0,220px);gap:8px;padding:0 8px 4px;font-family:var(--ui);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+@media (max-width:760px){.qhead{display:none}}
+.qlist{display:grid;gap:6px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ai-out{font-size:13px;color:var(--ink-2);min-height:18px}
+.inline-confirm{display:inline-flex;gap:6px;align-items:center;font-size:13px;flex-wrap:wrap}
+
+/* ===== paper pages (export / print) ===== */
+#stage{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;z-index:-1}
+html.exporting,html.exporting body{overflow:visible;height:auto}
+.page{width:794px;height:1123px;overflow:hidden;display:flex;flex-direction:column;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+/* dark card sheet */
+.page.dark{background:radial-gradient(ellipse at 50% 0%,#0f3a33 0%,#07110f 45%,#04090a 100%);color:#e9f5ef;padding:28px 30px 20px;font-family:var(--body)}
+.dhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:10px;margin-bottom:10px;border-bottom:2px solid #c9b27a}
+.dhead h1{margin:0;font-family:var(--display);font-size:24px;letter-spacing:.04em;line-height:1.05;background:linear-gradient(180deg,#fff,#c9d3cf 50%,#8a9994);-webkit-background-clip:text;background-clip:text;color:transparent}
+.dhead .s{font-size:11px;color:#9fc7b8;font-family:var(--ui);letter-spacing:.12em;text-transform:uppercase}
+.dhead .tag{font-family:var(--ui);font-weight:700;font-size:11px;letter-spacing:.12em;padding:5px 10px;border:1px solid #c9b27a;color:#f3dca0;border-radius:4px;text-transform:uppercase;white-space:nowrap}
+.dmeta{display:flex;gap:18px;font-size:11px;color:#bcd8cd;margin-bottom:8px}
+.dmeta span{flex:1;border-bottom:1px dotted #5d7d72;padding-bottom:2px}
+.dgrid{flex:1;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(6,1fr);gap:7px;min-height:0}
+.dc{position:relative;border-radius:8px;padding:6px 7px;display:flex;flex-direction:column;min-height:0;overflow:hidden;
+  background:linear-gradient(160deg,#0d2a23 0%,#061210 70%);border:2px solid transparent;
+  background-clip:padding-box;box-shadow:0 0 0 1px #6f7d7a,0 0 0 2px #1a2522,inset 0 0 14px rgba(0,0,0,.6)}
+.dc::before{content:"";position:absolute;inset:0;border-radius:6px;border:1px solid var(--lc);opacity:.85;pointer-events:none}
+.dc.l1{--lc:#35e6d8}.dc.l2{--lc:#f2c14e}.dc.l3{--lc:#ff5c8a}
+.dc .top{display:flex;justify-content:space-between;align-items:center;font-family:var(--ui);font-weight:700;font-size:9px;letter-spacing:.08em;color:var(--lc)}
+.dc .q{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-size:10px;line-height:1.28;min-height:0;overflow:hidden;padding:2px 0;color:#eef7f3}
+.dc .ans{font-family:var(--mono);font-weight:700;font-size:10px;color:#1b1300;background:linear-gradient(180deg,#ffe08a,#e0a52a);border-radius:4px;padding:2px 5px;text-align:center;word-break:break-word}
+.dc .pwline{border-top:1px dashed #6d8d82;font-size:8px;color:#8fb3a6;padding-top:2px;font-family:var(--ui);letter-spacing:.1em}
+.dfoot{display:flex;justify-content:space-between;font-size:9px;color:#7fa596;margin-top:8px;font-family:var(--ui);letter-spacing:.08em}
+/* white worksheet */
+.page.paper{background:#fff;color:#111;padding:36px 40px 22px;font-family:var(--body);font-size:12px}
+.page.paper .pc{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:8px}
+.page.paper .pf{display:flex;justify-content:space-between;font-size:10px;color:#555;border-top:1px solid #bbb;padding-top:6px;margin-top:8px}
+.wh{border:2px solid #111;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.wh h1{margin:0;font-family:var(--display);font-size:19px;letter-spacing:.02em;line-height:1.1}
+.wh .s{font-size:11px;color:#333}
+.wh .code{font-family:var(--ui);font-weight:700;font-size:11px;border:1.5px solid #111;padding:3px 8px;white-space:nowrap}
+.wid{display:grid;grid-template-columns:1.2fr 1.6fr .8fr;gap:6px 14px;font-size:12px}
+.wid div{border-bottom:1px dotted #333;padding-bottom:3px}
+.wnote{border:1.5px dashed #111;padding:6px 10px;font-size:11.5px}
+.wgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start}
+.wb{border:1.5px solid #111;border-radius:6px;padding:7px 9px;display:flex;flex-direction:column;gap:5px;break-inside:avoid}
+.wb .h{display:flex;justify-content:space-between;align-items:center;font-family:var(--ui);font-weight:700;font-size:10.5px;letter-spacing:.06em}
+.wb .h .b{border:1px solid #111;border-radius:999px;padding:0 7px;font-size:10px}
+.wb .t{font-size:12px;line-height:1.35;white-space:pre-line}
+.wb .ty{font-size:9.5px;color:#444;font-family:var(--ui);letter-spacing:.08em;text-transform:uppercase}
+.wb .box{border:1.5px solid #111;height:28px;border-radius:4px;display:flex;align-items:center;padding-left:6px;font-size:9px;color:#777;font-family:var(--ui);letter-spacing:.08em}
+.klist{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 12px;align-content:start}
+.klist div{display:grid;grid-template-columns:30px 1fr;gap:6px;border-bottom:1px solid #ccc;padding:4px 0;font-size:11.5px}
+.klist b{font-family:var(--mono)}
+.klist span{font-family:var(--mono);font-weight:700;word-break:break-word}
+.busy{position:fixed;inset:0;z-index:95;display:grid;place-items:center;background:var(--navy);font-family:var(--display);font-size:22px;letter-spacing:.06em;color:var(--cyan)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:99;background:var(--ink);color:var(--navy);padding:10px 18px;border-radius:999px;font-weight:700;max-width:calc(100% - 32px);text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+
+@media print{
+  @page{size:A4;margin:0}
+  html,body{overflow:visible!important;height:auto!important;background:#fff}
+  body > *:not(#stage){display:none!important}
+  #stage{position:static!important;visibility:visible!important;z-index:auto}
+  .page{page-break-after:always;break-after:page}
+  .page.kunci-start{page-break-before:always;break-before:page}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<!-- ================= SETUP ================= -->
+<div id="screen-setup" class="screen active">
+  <div class="setup-top"><button type="button" class="guru-btn" onclick="askPin('dashboard')" aria-label="Menu kunci guru">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> MENU KUNCI GURU</button></div>
+  <div class="setup-main">
+    <div class="hero">
+      <svg class="emblem" viewBox="0 0 120 120" aria-hidden="true" id="emblemBig"></svg>
+      <h1 class="title" id="appTitle"></h1>
+      <div class="subtitle">Digital Vault Lock Arena</div>
+      <div class="mapel" id="appMapel"></div>
+    </div>
+    <div class="setup-card">
+      <div style="display:grid;gap:14px;align-content:start">
+        <div><span class="lbl">Jumlah tim</span>
+          <div class="stepper"><button type="button" onclick="changeTeams(-1)" aria-label="Kurangi tim">−</button><output id="teamCount">4</output><button type="button" onclick="changeTeams(1)" aria-label="Tambah tim">+</button></div>
+          <div class="hint">2 sampai 6 tim</div></div>
+        <div><label class="lbl" for="duration">Durasi (menit)</label><input id="duration" type="number" min="1" max="180" value="15" style="font-family:var(--mono);font-size:22px;font-weight:700;max-width:120px"></div>
+      </div>
+      <div style="display:grid;gap:10px;align-content:start">
+        <span class="lbl">Nama tim</span>
+        <div class="team-grid" id="teamInputs"></div>
+        <button type="button" class="btn cyan enter" onclick="startArena()">MASUK ARENA PERTANDINGAN ▶</button>
+      </div>
+    </div>
+    <div class="setup-foot" id="footer"></div>
+  </div>
+</div>
+
+<!-- ================= ARENA ================= -->
+<div id="screen-arena" class="screen">
+  <div class="a-head">
+    <div class="a-brand"><svg viewBox="0 0 120 120" aria-hidden="true" id="emblemSmall"></svg><div><b id="arenaTitle"></b><small>Digital Vault Lock Arena</small></div></div>
+    <div class="timer-wrap">
+      <div class="timer" id="timer" role="timer" aria-live="off">15:00</div>
+      <button type="button" class="icon-btn" id="pauseBtn" onclick="togglePause()" aria-label="Jeda waktu"></button>
+    </div>
+    <div class="a-tools">
+      <button type="button" class="icon-btn big" id="musicBtn" onclick="toggleMusic()" aria-label="Musik latar"></button>
+      <button type="button" class="icon-btn" onclick="askPin('keys')" aria-label="Kunci jawaban guru" title="Kunci jawaban guru">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffb703" stroke-width="2.2"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></button>
+      <button type="button" class="btn sm" id="endBtn" onclick="confirmEnd()">Akhiri</button>
+    </div>
+  </div>
+  <div class="a-body">
+    <div class="vgrid" id="vgrid"></div>
+    <aside class="board">
+      <h3>Leaderboard</h3>
+      <div class="list" id="board"></div>
+      <div class="legend"><span style="--c:var(--cyan)">Mudah 100</span><span style="--c:var(--gold)">Sedang 200</span><span style="--c:#ff4d8d">Sulit 300</span></div>
+      <div class="stat" id="stat"></div>
+    </aside>
+  </div>
+</div>
+
+<!-- ================= GAME OVER ================= -->
+<div id="screen-gameover" class="screen">
+  <h1 class="go-title">JUARA ARENA</h1>
+  <div class="hint" id="goReason" style="text-align:center"></div>
+  <div class="podium" id="podium"></div>
+  <div class="go-table" id="goTable"></div>
+  <div class="go-actions">
+    <button type="button" class="btn gold" onclick="exportResult()">Unduh hasil (gambar)</button>
+    <button type="button" class="btn cyan" onclick="showScreen('screen-setup')">Main lagi</button>
+  </div>
+</div>
+
+<!-- ================= TEACHER DASHBOARD ================= -->
+<div id="screen-teacher" class="screen">
+  <div class="t-bar">
+    <button type="button" class="btn sm" onclick="leaveTeacher()">← Kembali</button>
+    <h2>DASHBOARD GURU</h2>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" data-tab="soal" aria-selected="true" onclick="setTab('soal')">Lembar Soal</button>
+      <button type="button" class="tab" role="tab" data-tab="kunci" aria-selected="false" onclick="setTab('kunci')">Kunci Jawaban</button>
+      <button type="button" class="tab" role="tab" data-tab="lkt" aria-selected="false" onclick="setTab('lkt')">Lembar Kerja A4</button>
+      <button type="button" class="tab" role="tab" data-tab="edit" aria-selected="false" onclick="setTab('edit')">Edit Soal &amp; Kunci</button>
+    </div>
+    <div class="t-actions" id="tActions">
+      <button type="button" class="btn gold sm" onclick="exportTab('png')">Download sebagai Gambar</button>
+      <button type="button" class="btn cyan sm" onclick="exportTab('print')">Print</button>
+    </div>
+  </div>
+  <div class="t-body" id="tBody">
+    <div class="preview" id="preview"></div>
+    <div id="editor" hidden></div>
+  </div>
+</div>
+
+<div id="overlay" class="overlay" hidden></div>
+<div id="fx" class="fx" hidden></div>
+<canvas id="confetti" hidden></canvas>
+<div id="stage"></div>
+<div class="busy" id="busy" hidden>MENYIAPKAN FILE…</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* =========================================================
+   DATA: 30 soal Interaksi Sosial (bisa diedit di Dashboard Guru)
+   tipe: "kata" | "kalimat" | "angka" | "biner"
+   kunci: pisahkan jawaban alternatif dengan titik koma (;)
+   ========================================================= */
+const DEFAULT_DATA={
+  settings:{appName:"CIPHER VAULT ARENA",mapel:"Ilmu Pengetahuan Sosial",tema:"Interaksi Sosial",target:"Siswa Kelas VIII SMP",guru:"Khotimmatul Anwariyah, S.Pd., Gr.",sekolah:"SMP 9 Bandung",pin:"1234"},
+  soal:[
+   {q:"Hubungan timbal balik antara individu dengan individu, individu dengan kelompok, atau kelompok dengan kelompok disebut interaksi …",tipe:"kata",kunci:"SOSIAL"},
+   {q:"Ada berapa syarat terjadinya interaksi sosial? (tulis dengan angka)",tipe:"angka",kunci:"2"},
+   {q:"Syarat interaksi sosial berupa hubungan antara dua pihak, baik secara langsung maupun tidak langsung, disebut …",tipe:"kata",kunci:"KONTAK;KONTAK SOSIAL"},
+   {q:"Syarat interaksi sosial berupa proses penyampaian pesan dari satu pihak ke pihak lain disebut …",tipe:"kata",kunci:"KOMUNIKASI"},
+   {q:"Faktor pendorong interaksi berupa tindakan meniru sikap, perilaku, atau penampilan orang lain disebut …",tipe:"kata",kunci:"IMITASI"},
+   {q:"Pengaruh berupa pandangan atau sikap yang diterima seseorang tanpa berpikir panjang disebut …",tipe:"kata",kunci:"SUGESTI"},
+   {q:"Kecenderungan seseorang untuk menjadi sama (identik) dengan tokoh yang diidolakannya disebut …",tipe:"kata",kunci:"IDENTIFIKASI"},
+   {q:"Perasaan tertarik kepada orang lain yang membuat kita ikut merasakan keadaannya disebut …",tipe:"kata",kunci:"SIMPATI"},
+   {q:"Kemampuan merasakan diri seolah-olah berada dalam keadaan orang lain, lebih dalam daripada simpati, disebut …",tipe:"kata",kunci:"EMPATI"},
+   {q:"Proses interaksi sosial yang mengarah pada persatuan dan kerja sama disebut proses …",tipe:"kata",kunci:"ASOSIATIF"},
+   {q:"Usaha bersama antarindividu atau kelompok untuk mencapai tujuan bersama disebut … (2 kata)",tipe:"kalimat",kunci:"KERJA SAMA;KERJASAMA"},
+   {q:"Usaha untuk meredakan pertentangan agar tercapai kestabilan disebut …",tipe:"kata",kunci:"AKOMODASI"},
+   {q:"Peleburan dua kebudayaan atau lebih menjadi kebudayaan baru sehingga ciri budaya aslinya hilang disebut …",tipe:"kata",kunci:"ASIMILASI"},
+   {q:"Penerimaan unsur kebudayaan asing tanpa menghilangkan kepribadian kebudayaan asli disebut …",tipe:"kata",kunci:"AKULTURASI"},
+   {q:"Perjuangan individu atau kelompok untuk memperoleh keuntungan tanpa ancaman atau kekerasan disebut …",tipe:"kata",kunci:"PERSAINGAN;KOMPETISI"},
+   {q:"Bentuk interaksi di antara persaingan dan pertentangan, ditandai rasa tidak suka yang disembunyikan, disebut …",tipe:"kata",kunci:"KONTRAVENSI"},
+   {q:"Penyelesaian pertentangan dengan bantuan pihak ketiga yang netral dan hanya berperan sebagai penasihat disebut …",tipe:"kata",kunci:"MEDIASI"},
+   {q:"Penyelesaian perkara atau sengketa melalui pengadilan disebut …",tipe:"kata",kunci:"AJUDIKASI"},
+   {q:"Bentuk akomodasi ketika kedua pihak saling mengurangi tuntutannya disebut …",tipe:"kata",kunci:"KOMPROMI"},
+   {q:"Kerja sama berupa gabungan dua organisasi atau lebih yang memiliki tujuan sama disebut …",tipe:"kata",kunci:"KOALISI"},
+   {q:"Tulis 1 jika BENAR dan 0 jika SALAH, berurutan:\n(a) Kontak sosial dapat terjadi tanpa sentuhan fisik.\n(b) Asimilasi mempertahankan ciri budaya asli.\n(c) Konflik termasuk proses disosiatif.\n(d) Keputusan mediator bersifat mengikat.",tipe:"biner",kunci:"1010"},
+   {q:"Tulis 1 jika BENAR dan 0 jika SALAH, berurutan:\n(a) Imitasi selalu berdampak positif.\n(b) Toleransi termasuk bentuk akomodasi.\n(c) Tawar-menawar (bargaining) termasuk bentuk kerja sama.\n(d) Empati lebih dalam daripada simpati.",tipe:"biner",kunci:"0111"},
+   {q:"Tulis 1 jika BENAR dan 0 jika SALAH, berurutan:\n(a) Arbitrase melibatkan pihak ketiga yang keputusannya mengikat.\n(b) Stalemate terjadi saat kekuatan kedua pihak seimbang sehingga pertentangan berhenti.\n(c) Kontravensi selalu ditandai kekerasan fisik.\n(d) Interaksi dapat terjadi antara kelompok dengan kelompok.",tipe:"biner",kunci:"1101"},
+   {q:"Tuliskan dua syarat terjadinya interaksi sosial, dihubungkan dengan kata \"DAN\".",tipe:"kalimat",kunci:"KONTAK SOSIAL DAN KOMUNIKASI;KONTAK DAN KOMUNIKASI;KOMUNIKASI DAN KONTAK SOSIAL;KOMUNIKASI DAN KONTAK"},
+   {q:"Penghentian pertentangan untuk sementara waktu dalam jangka tertentu disebut … (2 kata)",tipe:"kalimat",kunci:"GENCATAN SENJATA"},
+   {q:"Kerja sama untuk menjalankan proyek tertentu oleh dua pihak atau lebih, misalnya pengeboran minyak, disebut … (istilah asing, 2 kata)",tipe:"kalimat",kunci:"JOINT VENTURE"},
+   {q:"Dari daftar berikut, berapa yang termasuk proses ASOSIATIF? Kerja sama, persaingan, akomodasi, asimilasi, kontravensi, akulturasi, konflik. (tulis angka)",tipe:"angka",kunci:"4"},
+   {q:"Semboyan bangsa Indonesia yang mengajarkan persatuan dalam keberagaman interaksi sosial adalah … (3 kata)",tipe:"kalimat",kunci:"BHINNEKA TUNGGAL IKA"},
+   {q:"Penerimaan unsur-unsur baru dalam kepemimpinan suatu organisasi untuk menghindari konflik disebut …",tipe:"kata",kunci:"KOOPTASI"},
+   {q:"Proses disosiatif ada 3: persaingan, kontravensi, dan pertentangan. Ubah angka 3 menjadi bilangan BINER.",tipe:"biner",kunci:"11"}
+  ]};
+const TYPE_LABEL={kata:"Kata",kalimat:"Kalimat",angka:"Angka",biner:"Biner"};
+const TEAM_COLORS=["#00f2fe","#ffb703","#ff4d8d","#10d98a","#b04dff","#ff7a3d"];
+const clone=o=>JSON.parse(JSON.stringify(o));
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store={get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let DATA=store.get("cva3-data")||clone(DEFAULT_DATA);
+function fixData(){DATA.settings={...DEFAULT_DATA.settings,...(DATA.settings||{})};const s=Array.isArray(DATA.soal)?DATA.soal:[];
+  DATA.soal=Array.from({length:30},(_,i)=>{const x=s[i]||{};return {q:String(x.q||""),tipe:TYPE_LABEL[x.tipe]?x.tipe:"kata",kunci:String(x.kunci||"")}})}
+fixData();
+const saveData=()=>store.set("cva3-data",DATA);
+const level=i=>i<10?1:i<20?2:3, points=i=>level(i)*100;
+const norm=s=>String(s||"").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z0-9]/g,"");
+const keyMain=k=>String(k||"").split(";")[0].trim();
+function toast(m,ms=2800){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(t._t);t._t=setTimeout(()=>t.hidden=true,ms)}
+
+/* ================= NAVIGATION (spec) ================= */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ================= EMBLEM (original design) ================= */
+function emblemSVG(){return `<defs>
+ <linearGradient id="mt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f8ff"/><stop offset=".45" stop-color="#9fb0cf"/><stop offset=".55" stop-color="#5b6b8c"/><stop offset="1" stop-color="#d7e1f3"/></linearGradient>
+ <radialGradient id="gm" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#e8ffff"/><stop offset=".35" stop-color="#00f2fe"/><stop offset="1" stop-color="#005f7a"/></radialGradient>
+ <linearGradient id="gd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe28a"/><stop offset="1" stop-color="#c98a00"/></linearGradient></defs>
+ <polygon points="60,4 108,32 108,88 60,116 12,88 12,32" fill="url(#mt)" stroke="#0b1325" stroke-width="3"/>
+ <polygon points="60,14 99,37 99,83 60,106 21,83 21,37" fill="#0b1325"/>
+ <circle cx="60" cy="60" r="34" fill="none" stroke="url(#gd)" stroke-width="4"/>
+ ${Array.from({length:24},(_,i)=>{const a=i*15*Math.PI/180,r1=i%2?35:32;return `<line x1="${60+r1*Math.cos(a)}" y1="${60+r1*Math.sin(a)}" x2="${60+39*Math.cos(a)}" y2="${60+39*Math.sin(a)}" stroke="#ffb703" stroke-width="2"/>`}).join("")}
+ <polygon points="60,36 80,52 72,80 48,80 40,52" fill="url(#gm)" stroke="#bfffff" stroke-width="1.5"/>
+ <polygon points="60,36 66,56 60,80 54,56" fill="rgba(255,255,255,.35)"/>`}
+
+/* ================= SETUP ================= */
+let setup={count:4,names:["Tim 1","Tim 2","Tim 3","Tim 4","Tim 5","Tim 6"]};
+function renderBrand(){
+  const s=DATA.settings;
+  $("#appTitle").textContent=s.appName||"CIPHER VAULT ARENA";
+  $("#arenaTitle").textContent=s.appName||"CIPHER VAULT ARENA";
+  $("#appMapel").textContent=[s.mapel,s.tema,s.target].filter(Boolean).join(" · ");
+  $("#footer").textContent="Dikembangkan oleh Guru: "+(s.guru||"-")+(s.sekolah?" · "+s.sekolah:"");
+}
+function renderTeamInputs(){
+  $("#teamCount").textContent=setup.count;
+  $("#teamInputs").innerHTML=Array.from({length:setup.count},(_,i)=>`<label class="ti"><i style="background:${TEAM_COLORS[i]};color:${TEAM_COLORS[i]}"></i><input id="tname${i}" value="${esc(setup.names[i])}" aria-label="Nama tim ${i+1}" maxlength="24"></label>`).join("");
+  for(let i=0;i<setup.count;i++)$("#tname"+i).oninput=e=>setup.names[i]=e.target.value;
+}
+function changeTeams(d){setup.count=Math.min(6,Math.max(2,setup.count+d));renderTeamInputs()}
+
+/* ================= AUDIO (Web Audio API) ================= */
+let audioCtx=null,gainMusikLatar=null,gainEfekSuara=null,noiseBuf=null,musicOn=true,bgmTimer=null,nextNoteTime=0,step=0;
+function initAudio(){ // dipanggil HANYA dari handler klik
+  if(!audioCtx){
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    audioCtx=new AC();
+    gainMusikLatar=audioCtx.createGain();gainMusikLatar.gain.value=.32;gainMusikLatar.connect(audioCtx.destination);
+    gainEfekSuara=audioCtx.createGain();gainEfekSuara.gain.value=.9;gainEfekSuara.connect(audioCtx.destination);
+    noiseBuf=audioCtx.createBuffer(1,audioCtx.sampleRate*.5,audioCtx.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  }
+  if(audioCtx.state==="suspended")audioCtx.resume();
+}
+const BPM=128,SIX=60/BPM/4;
+const PROG=[[57,60,64],[53,57,60],[48,52,55],[55,59,62]]; // Am F C G (MIDI)
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function tone(freq,t,dur,type,vol,dest,attack=.005){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+attack);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g);g.connect(dest);o.start(t);o.stop(t+dur+.02)}
+function kick(t){const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(40,t+.12);g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.001,t+.25);o.connect(g);g.connect(gainMusikLatar);o.start(t);o.stop(t+.26)}
+function noise(t,dur,vol,hp){const s=audioCtx.createBufferSource();s.buffer=noiseBuf;const f=audioCtx.createBiquadFilter();f.type="highpass";f.frequency.value=hp;const g=audioCtx.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(gainMusikLatar);s.start(t);s.stop(t+dur+.02)}
+function scheduleStep(s,t){
+  const bar=Math.floor(s/16)%4,st=s%16,ch=PROG[bar];
+  if(st%4===0)kick(t);
+  if(st%4===2)noise(t,.05,.25,7000);
+  if(st===4||st===12)noise(t,.14,.35,1500);
+  if([0,3,6,8,11,14].includes(st))tone(mtof(ch[0]-24),t,SIX*1.8,"sawtooth",.22,gainMusikLatar);
+  if(st%2===0){const n=ch[(st/2)%3]+12+((st%8===6)?12:0);tone(mtof(n),t,SIX*1.6,"square",.07,gainMusikLatar)}
+  if(st===0)ch.forEach(n=>tone(mtof(n),t,SIX*14,"triangle",.045,gainMusikLatar,.08));
+}
+function scheduler(){while(nextNoteTime<audioCtx.currentTime+.12){scheduleStep(step,nextNoteTime);nextNoteTime+=SIX;step++}}
+function startBGM(){if(!audioCtx||!musicOn||bgmTimer)return;nextNoteTime=audioCtx.currentTime+.06;bgmTimer=setInterval(scheduler,25)}
+function stopBGM(){clearInterval(bgmTimer);bgmTimer=null}
+function toggleMusic(){initAudio();musicOn=!musicOn;if(musicOn&&G&&!G.over)startBGM();else stopBGM();renderMusicBtn()}
+function renderMusicBtn(){const b=$("#musicBtn");b.classList.toggle("off",!musicOn);b.setAttribute("aria-pressed",String(musicOn));b.title=musicOn?"Musik menyala — klik untuk mematikan":"Musik mati — klik untuk menyalakan";
+  b.innerHTML=musicOn?`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00f2fe" stroke-width="2.2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="rgba(0,242,254,.2)"/><path d="M16 8.5a5 5 0 0 1 0 7M18.8 6a8.5 8.5 0 0 1 0 12"/></svg>`
+  :`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#7485a8" stroke-width="2.2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>`}
+function sfxSuccess(){if(!audioCtx)return;const t=audioCtx.currentTime;[1318.5,1568,2093,2637].forEach((f,i)=>{tone(f,t+i*.08,.9,"sine",.28,gainEfekSuara);tone(f*2,t+i*.08,.4,"sine",.06,gainEfekSuara)})}
+function sfxFail(){if(!audioCtx)return;const t=audioCtx.currentTime;tone(110,t,.55,"sawtooth",.35,gainEfekSuara,.01);tone(92,t,.55,"square",.22,gainEfekSuara,.01);tone(98,t+.3,.45,"sawtooth",.3,gainEfekSuara,.01)}
+function sfxClick(){if(!audioCtx)return;tone(900,audioCtx.currentTime,.05,"square",.05,gainEfekSuara)}
+function sfxFanfare(){if(!audioCtx)return;const t=audioCtx.currentTime;[523,659,784,1046,784,1046,1318].forEach((f,i)=>tone(f,t+i*.14,.5,"triangle",.3,gainEfekSuara))}
+
+/* ================= GAME STATE ================= */
+let G=null,tick=null;
+function startArena(){
+  initAudio(); // AudioContext dibuat di dalam klik
+  const mins=Math.max(1,Math.min(180,parseInt($("#duration").value)||15));
+  G={teams:Array.from({length:setup.count},(_,i)=>({n:(setup.names[i]||"").trim()||("Tim "+(i+1)),c:TEAM_COLORS[i],s:0,ok:0})),
+     vaults:Array(30).fill(null),total:mins*60,remaining:mins*60,endAt:Date.now()+mins*60*1000,paused:false,over:false,lastTeam:0};
+  renderArena();startTimer();showScreen('screen-arena');startBGM();renderMusicBtn();
+}
+function renderArena(){
+  $("#vgrid").innerHTML=Array.from({length:30},(_,i)=>{const v=G.vaults[i],L=level(i);const num=String(i+1).padStart(2,"0");
+    if(v){const t=G.teams[v.team];return `<button type="button" class="vault open l${L}" disabled aria-label="Vault ${num} terbuka oleh ${esc(t.n)}">
+      <svg viewBox="0 0 24 24" fill="#ffb703" stroke="#7a5200" stroke-width="1.2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="#ffb703" stroke-width="2.4"/></svg>
+      <span class="vn">VAULT #${num}</span><span class="team-badge" style="--tc:${t.c}">${esc(t.n)}</span></button>`}
+    return `<button type="button" class="vault l${L}" onclick="openVault(${i})" aria-label="Vault ${num}, ${points(i)} poin"><span class="vn">VAULT</span><span class="vnum">#${num}</span><span class="vp">${points(i)} PTS</span></button>`}).join("");
+  renderBoard();
+}
+function ranked(){return G.teams.map((t,i)=>({...t,i})).sort((a,b)=>b.s-a.s||b.ok-a.ok)}
+function renderBoard(bumpIdx){
+  $("#board").innerHTML=ranked().map((t,k)=>`<div class="brow ${t.i===bumpIdx?"bump":""}" style="--tc:${t.c}"><span class="r">${k+1}</span><span class="n">${esc(t.n)}</span><span class="s">${t.s}</span></div>`).join("");
+  const n=G.vaults.filter(Boolean).length;$("#stat").textContent=`${n} / 30 VAULT TERBUKA`;
+}
+/* timer */
+const fmt=s=>`${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+function startTimer(){clearInterval(tick);tick=setInterval(updTimer,250);updTimer();renderPause()}
+function updTimer(){if(!G||G.over)return;if(!G.paused)G.remaining=Math.max(0,Math.ceil((G.endAt-Date.now())/1000));
+  const el=$("#timer");el.textContent=fmt(G.remaining);el.classList.toggle("danger",G.remaining<=120&&!G.paused);el.classList.toggle("paused",G.paused);
+  if(G.remaining<=0)gameOver("Waktu habis!")}
+function togglePause(){if(!G||G.over)return;G.paused=!G.paused;if(!G.paused)G.endAt=Date.now()+G.remaining*1000;updTimer();renderPause()}
+function renderPause(){const b=$("#pauseBtn");b.setAttribute("aria-label",G&&G.paused?"Lanjutkan waktu":"Jeda waktu");
+  b.innerHTML=G&&G.paused?`<svg width="24" height="24" viewBox="0 0 24 24" fill="#10d98a"><path d="M7 4l13 8-13 8z"/></svg>`:`<svg width="24" height="24" viewBox="0 0 24 24" fill="#ffb703"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`}
+function confirmEnd(){const b=$("#endBtn");if(b.dataset.arm){gameOver("Permainan diakhiri oleh guru.");return}
+  b.dataset.arm="1";b.textContent="Yakin? Klik lagi";b.classList.add("red");setTimeout(()=>{delete b.dataset.arm;b.textContent="Akhiri";b.classList.remove("red")},3500)}
+
+/* ================= VAULT MODAL & KEYBOARD ================= */
+let M=null;
+const ov=$("#overlay");
+function openVault(i){
+  initAudio();sfxClick();
+  M={i,team:G.lastTeam,val:""};const q=DATA.soal[i];const num=String(i+1).padStart(2,"0");const bin=q.tipe==="biner";
+  ov.hidden=false;
+  ov.innerHTML=`<div class="modal" id="vm" role="dialog" aria-modal="true" aria-labelledby="vmT">
+    <h2 class="m-title" id="vmT">VAULT #${num} - ${points(i)} PTS</h2>
+    <div class="m-sub">Pilih tim yang sedang menjawab · Tipe password: <b style="color:var(--gold)">${TYPE_LABEL[q.tipe].toUpperCase()}</b></div>
+    <div class="team-pick" id="teamPick"></div>
+    <input class="pw" id="pw" autocomplete="off" spellcheck="false" placeholder="${bin?"0101…":"KETIK PASSWORD"}" aria-label="Password vault" ${bin?'inputmode="numeric"':""}>
+    <div class="kbd ${bin?"bin":""}" id="kbd"></div>
+    <div class="m-actions"><button type="button" class="btn" onclick="closeModal()">BATAL</button><button type="button" class="btn gold" onclick="submitVault()">UNLOCK VAULT</button></div>
+  </div>`;
+  renderTeamPick();renderKeyboard(bin);
+  const pw=$("#pw");pw.oninput=()=>{if(bin)pw.value=pw.value.replace(/[^01]/g,"");M.val=pw.value};
+  pw.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();submitVault()}};
+  setTimeout(()=>pw.focus(),40);
+}
+function renderTeamPick(){$("#teamPick").innerHTML=G.teams.map((t,k)=>`<button type="button" class="tp" style="--tc:${t.c}" aria-pressed="${k===M.team}" onclick="M.team=${k};renderTeamPick()"><i></i>${esc(t.n)}</button>`).join("")}
+function renderKeyboard(bin){
+  const k=(label,act,cls="")=>`<button type="button" class="key ${cls}" data-k="${esc(act)}">${label}</button>`;
+  let html;
+  if(bin){html=`<div class="kr">${k("0","0")}${k("1","1")}</div><div class="kr">${k("CLEAR","CLR","warn wide")}${k("⌫","BS","warn")}${k("SUBMIT","OK","act wide")}</div>`}
+  else{const rows=["1234567890","QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+    html=rows.map((r,ri)=>`<div class="kr">${r.split("").map(c=>k(c,c)).join("")}${ri===3?k("⌫","BS","warn wide"):""}</div>`).join("")+
+      `<div class="kr">${k("CLEAR","CLR","warn wide")}${k("SPACE","SP","xwide")}${k("-","-")}${k("SUBMIT","OK","act wide")}</div>`}
+  $("#kbd").innerHTML=html;
+  $$("#kbd .key").forEach(b=>b.onclick=()=>{const a=b.dataset.k,pw=$("#pw");sfxClick();
+    if(a==="OK")return submitVault();if(a==="CLR")pw.value="";else if(a==="BS")pw.value=pw.value.slice(0,-1);else if(a==="SP")pw.value+=" ";else pw.value+=a;
+    M.val=pw.value});
+}
+function closeModal(){ov.hidden=true;ov.innerHTML="";M=null}
+function submitVault(){
+  if(!M)return;const q=DATA.soal[M.i];const v=$("#pw").value;
+  if(!norm(v)){$("#vm").classList.remove("shake");void $("#vm").offsetWidth;$("#vm").classList.add("shake");toast("Masukkan password terlebih dahulu");return}
+  const ok=q.kunci.split(";").map(norm).filter(Boolean).includes(norm(v));
+  const i=M.i,team=M.team;G.lastTeam=team;
+  if(ok){const pts=points(i);G.vaults[i]={team};G.teams[team].s+=pts;G.teams[team].ok++;closeModal();renderArena();renderBoard(team);
+    sfxSuccess();showFx(true,team,pts);
+    if(G.vaults.every(Boolean))setTimeout(()=>gameOver("Semua 30 vault berhasil dibuka!"),2600);}
+  else{sfxFail();showFx(false,team);}
+}
+/* big overlays */
+let fxTimer=null;
+function showFx(ok,team,pts){const fx=$("#fx");clearTimeout(fxTimer);fx.className="fx "+(ok?"ok":"no");fx.hidden=false;
+  const t=G.teams[team];
+  fx.innerHTML=ok?`<div class="inner"><h2>ACCESS GRANTED!</h2><h3>VAULT UNLOCKED!</h3><div class="pts">+${pts} PTS</div><p>${esc(t.n)}</p></div>`
+    :`<div class="inner"><h2>ACCESS DENIED!</h2><h3>KODE PASSWORD SALAH!</h3><p>${esc(t.n)} · coba lagi</p></div>`;
+  if(ok)confetti(2600,false);
+  const hide=()=>{fx.hidden=true;fx.onclick=null;if(!ok){const pw=$("#pw");if(pw){pw.select();pw.focus();$("#vm").classList.remove("shake");void $("#vm").offsetWidth;$("#vm").classList.add("shake")}}};
+  fx.onclick=hide;fxTimer=setTimeout(hide,ok?2300:1700);
+}
+/* confetti / fireworks */
+function confetti(ms,fireworks){
+  const cv=$("#confetti");cv.hidden=false;const ctx=cv.getContext("2d");const W=cv.width=innerWidth,H=cv.height=innerHeight;
+  const cols=["#ffb703","#ffd25a","#00f2fe","#ffffff","#ff4d8d","#10d98a"];let parts=[];
+  const burst=(x,y,n,sp)=>{for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=sp*(.4+Math.random());parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-(fireworks?0:4),g:.12+Math.random()*.08,s:3+Math.random()*5,c:cols[i%cols.length],r:Math.random()*6,life:1,rot:Math.random()*.3})}};
+  if(fireworks)burst(W/2,H/3,120,7);else{for(let i=0;i<160;i++)parts.push({x:Math.random()*W,y:-20-Math.random()*H*.5,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,g:.05,s:4+Math.random()*6,c:cols[i%cols.length],r:Math.random()*6,life:1,rot:Math.random()*.3})}
+  const start=performance.now();let lastB=start;
+  const frame=now=>{ctx.clearRect(0,0,W,H);
+    if(fireworks&&now-lastB>420&&now-start<ms-800){burst(W*(.15+Math.random()*.7),H*(.15+Math.random()*.4),90,6);lastB=now}
+    parts.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.r+=p.rot;if(fireworks){p.vx*=.985;p.vy*=.985;p.life-=.012}
+      ctx.save();ctx.globalAlpha=Math.max(0,p.life);ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.fillStyle=p.c;ctx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);ctx.restore()});
+    parts=parts.filter(p=>p.y<H+30&&p.life>0);
+    if(now-start<ms||parts.length&&now-start<ms+2000)requestAnimationFrame(frame);else{ctx.clearRect(0,0,W,H);cv.hidden=true}};
+  requestAnimationFrame(frame);
+}
+
+/* ================= GAME OVER ================= */
+function gameOver(reason){
+  if(!G||G.over)return;G.over=true;clearInterval(tick);stopBGM();closeModal();$("#fx").hidden=true;
+  const r=ranked();$("#goReason").textContent=reason;
+  const order=[1,0,2].filter(k=>r[k]);const H={0:100,1:72,2:52};
+  $("#podium").innerHTML=order.map(k=>`<div class="pod p${k+1}"><span class="crown">${k===0?"👑":""}</span><span class="nm" style="color:${r[k].c}">${esc(r[k].n)}</span><span class="sc">${r[k].s} PTS</span><div class="blk" style="height:${H[k]}%">${k+1}</div></div>`).join("");
+  $("#goTable").innerHTML=r.map((t,k)=>`<div class="brow" style="--tc:${t.c}"><span class="r">${k+1}</span><span class="n">${esc(t.n)} <span class="hint">· ${t.ok} vault</span></span><span class="s">${t.s}</span></div>`).join("");
+  showScreen('screen-gameover');sfxFanfare();confetti(5200,true);
+}
+
+/* ================= TEACHER PIN ================= */
+function askPin(target){
+  initAudio();
+  ov.hidden=false;
+  ov.innerHTML=`<div class="modal gold" role="dialog" aria-modal="true" aria-labelledby="pinT" style="max-width:420px">
+    <h2 class="m-title" id="pinT" style="text-shadow:0 0 14px var(--gold)">🔒 AKSES GURU</h2>
+    <div class="m-sub">Masukkan password guru</div>
+    <div class="pin"><input id="pinIn" type="password" inputmode="numeric" autocomplete="off" aria-label="Password guru" maxlength="12"></div>
+    <div class="numpad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" class="key" data-n="${n}">${n}</button>`).join("")}<button type="button" class="key warn" data-n="C">C</button><button type="button" class="key" data-n="0">0</button><button type="button" class="key act" data-n="OK">OK</button></div>
+    <div class="m-sub" id="pinMsg" style="color:var(--red);min-height:18px"></div>
+    <div class="m-actions"><button type="button" class="btn" onclick="closeModal()">BATAL</button></div></div>`;
+  const inp=$("#pinIn");setTimeout(()=>inp.focus(),40);
+  const go=()=>{if(inp.value===String(DATA.settings.pin||"1234")){closeModal();target==="keys"?showKeysModal():openTeacher()}
+    else{sfxFail();$("#pinMsg").textContent="AKSES DITOLAK! Password salah.";inp.value="";const m=ov.querySelector(".modal");m.classList.remove("shake");void m.offsetWidth;m.classList.add("shake")}};
+  inp.onkeydown=e=>{if(e.key==="Enter")go()};
+  ov.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{const n=b.dataset.n;if(n==="OK")go();else if(n==="C")inp.value="";else inp.value+=n});
+}
+function showKeysModal(){
+  ov.hidden=false;
+  ov.innerHTML=`<div class="modal gold" role="dialog" aria-modal="true" aria-labelledby="kT" style="width:min(1100px,100%)">
+    <h2 class="m-title" id="kT" style="text-shadow:0 0 14px var(--gold)">KUNCI JAWABAN &amp; PASSWORD VAULT</h2>
+    <div class="m-sub">Khusus guru · jangan tampilkan ke siswa</div>
+    <div class="keylist">${DATA.soal.map((q,i)=>`<div class="kl ${G&&G.vaults[i]?"done":""}"><b>#${String(i+1).padStart(2,"0")}</b><div><span class="a">${esc(keyMain(q.kunci))}</span> <span class="hint">· ${TYPE_LABEL[q.tipe]} · ${points(i)}</span></div></div>`).join("")}</div>
+    <div class="m-actions"><button type="button" class="btn gold" onclick="closeModal()">TUTUP</button></div></div>`;
+}
+
+/* ================= TEACHER DASHBOARD ================= */
+let tab="soal",fromScreen="screen-setup";
+function openTeacher(){fromScreen=document.querySelector(".screen.active").id;showScreen('screen-teacher');setTab(tab)}
+function leaveTeacher(){renderBrand();buildStage("lkt");showScreen(fromScreen==="screen-teacher"?"screen-setup":fromScreen)}
+function setTab(t){tab=t;$$(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));
+  const isEdit=t==="edit";$("#preview").hidden=isEdit;$("#editor").hidden=!isEdit;$("#tActions").hidden=isEdit;$("#tBody").scrollTop=0;
+  if(isEdit)renderEditor();else renderPreview()}
+
+/* ---- page builders ---- */
+function darkPage(withKey){
+  const s=DATA.settings;
+  const cards=DATA.soal.map((q,i)=>`<div class="dc l${level(i)}"><div class="top"><span>VAULT #${String(i+1).padStart(2,"0")}</span><span>${points(i)} PTS</span></div>
+    <div class="q"><span>${esc(q.q).replace(/\n/g,"<br>")}</span></div>
+    ${withKey?`<div class="ans">🔑 ${esc(keyMain(q.kunci))}</div>`:`<div class="pwline">PASSWORD: ${q.tipe==="biner"?"(biner)":""}</div>`}</div>`).join("");
+  return `<div class="page dark"><div class="dhead"><div><h1>${esc(s.appName)}</h1><div class="s">${esc([s.mapel,s.tema,s.target].filter(Boolean).join(" · "))}</div></div><span class="tag">${withKey?"Kunci Jawaban · Khusus Guru":"Lembar Soal Vault"}</span></div>
+    ${withKey?"":`<div class="dmeta"><span>Nama kelompok:</span><span>Anggota:</span><span style="flex:.5">Kelas:</span></div>`}
+    <div class="dgrid">${cards}</div>
+    <div class="dfoot"><span>${esc(s.sekolah||"")}${s.guru?" · Guru: "+esc(s.guru):""}</span><span>Cyan = Mudah 100 · Emas = Sedang 200 · Merah = Sulit 300</span></div></div>`;
+}
+function fitDark(root){root.querySelectorAll(".dc .q").forEach(q=>{let fs=10.5;q.style.fontSize=fs+"px";while(q.scrollHeight>q.clientHeight+1&&fs>6){fs-=.5;q.style.fontSize=fs+"px"}})}
+function paperPages(stage){
+  const s=DATA.settings;stage.innerHTML="";const pages=[];
+  const mk=(cls,first)=>{const p=document.createElement("div");p.className="page paper "+(cls||"");p.innerHTML=`<div class="pc">${first||""}</div><div class="pf"><span></span><span></span></div>`;stage.appendChild(p);pages.push(p);return p.querySelector(".pc")};
+  const head=`<div class="wh"><div><h1>LEMBAR KERJA TIM: ${esc((s.mapel||"").toUpperCase())}</h1><div class="s">${esc([s.tema,s.target,s.sekolah].filter(Boolean).join(" · "))}</div></div><span class="code">${esc(s.appName)}</span></div>
+    <div class="wid"><div>Nama Kelompok: </div><div>Anggota: </div><div>Kelas: </div></div>
+    <div class="wnote"><b>Petunjuk Kerja:</b> Selesaikan setiap soal pada kotak kartu. Jawabannya adalah <b>KODE RAHASIA / PASSWORD</b> untuk membuka Vault di layar proyektor! Tulis password pada kotak jawaban, lalu kirim wakil kelompok ke layar.</div>`;
+  let pc=mk("",head);let grid=document.createElement("div");grid.className="wgrid";pc.appendChild(grid);
+  DATA.soal.forEach((q,i)=>{const w=document.createElement("div");w.className="wb";
+    w.innerHTML=`<div class="h"><span>KARTU VAULT #${i+1}</span><span class="b">${points(i)} POIN</span></div><div class="t">${esc(q.q)}</div><div class="ty">Tipe password: ${TYPE_LABEL[q.tipe]}</div><div class="box">PASSWORD:</div>`;
+    grid.appendChild(w);
+    if(pc.scrollHeight>pc.clientHeight+1&&grid.children.length>1){w.remove();pc=mk("");grid=document.createElement("div");grid.className="wgrid";pc.appendChild(grid);grid.appendChild(w)}});
+  const kc=mk("kunci-start",`<div class="wh"><div><h1>KUNCI JAWABAN &amp; PASSWORD VAULT (KHUSUS GURU)</h1><div class="s">${esc([s.mapel,s.tema].filter(Boolean).join(" · "))}</div></div><span class="code">RAHASIA</span></div>
+    <div class="klist">${DATA.soal.map((q,i)=>`<div><b>#${String(i+1).padStart(2,"0")}</b><span>${esc(q.kunci.split(";").map(x=>x.trim()).filter(Boolean).join(" / "))}</span></div>`).join("")}</div>`);
+  pages.forEach((p,i)=>{const f=p.querySelectorAll(".pf span");f[0].textContent=`${s.appName} · Lembar Kerja Tim`;f[1].textContent=`Halaman ${i+1} dari ${pages.length}`});
+  return pages;
+}
+function buildStage(kind){ // builds the real-size pages used for export and printing
+  const st=$("#stage");
+  if(kind==="lkt")return paperPages(st);
+  st.innerHTML=darkPage(kind==="kunci");fitDark(st);return [...st.children];
+}
+function renderPreview(){
+  const pages=buildStage(tab);
+  const W=Math.min(($("#tBody").clientWidth||800)-24,720),k=W/794;
+  $("#preview").innerHTML=pages.map(p=>`<div class="pscale" style="width:${794*k}px;height:${1123*k}px">${p.outerHTML.replace('class="page','style="transform:scale('+k+')" class="page')}</div>`).join("");
+  if(tab!=="lkt")buildStage("lkt"); // keep worksheet ready for Ctrl+P
+}
+addEventListener("resize",()=>{if($("#screen-teacher").classList.contains("active")&&tab!=="edit")renderPreview()});
+
+/* ---- export: PNG & print ---- */
+let DL=null,SAMPLE=null;
+(async()=>{try{if(window.claude&&window.claude.use){[DL,SAMPLE]=await Promise.all([window.claude.use("downloads"),window.claude.use("sample")])}}catch(e){}
+  if($("#aiBox"))$("#aiBox").hidden=!SAMPLE})();
+async function saveFile(name,blob){
+  if(DL){try{await DL.save({filename:name,data:blob});toast("Tersimpan: "+name);return true}catch(e){const c=e&&e.code;toast(c==="declined"?"Unduhan dibatalkan.":c==="rate_limited"?"Tunggu sebentar lalu coba lagi.":"Unduhan tidak tersedia di tampilan ini.");return false}}
+  try{const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);toast("Diunduh: "+name);return true}catch(e){toast("Browser menolak unduhan.");return false}
+}
+const slug=()=>String(DATA.settings.appName||"vault").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+async function capture(pages){
+  if(typeof html2canvas==="undefined")throw new Error("lib");
+  $("#busy").hidden=false;document.documentElement.classList.add("exporting");const st=$("#stage");st.style.visibility="visible";
+  try{if(document.fonts&&document.fonts.ready)await document.fonts.ready;const out=[];
+    for(const p of pages)out.push(await html2canvas(p,{scale:2,useCORS:true,backgroundColor:null,scrollX:0,scrollY:0,windowWidth:1100,logging:false}));return out}
+  finally{st.style.visibility="";document.documentElement.classList.remove("exporting");$("#busy").hidden=true}
+}
+async function exportTab(fmt){
+  const kind=tab,name=`${slug()}-${{soal:"lembar-soal",kunci:"kunci-jawaban",lkt:"lembar-kerja"}[kind]}`;
+  const pages=buildStage(kind);
+  if(fmt==="print"&&!DL){ // browser biasa / Canva: dialog cetak asli
+    const after=()=>{buildStage("lkt");removeEventListener("afterprint",after)};addEventListener("afterprint",after);setTimeout(()=>window.print(),80);return}
+  try{
+    const cv=await capture(pages);
+    if(fmt==="png"){const gap=24,w=cv[0].width,h=cv.reduce((a,c)=>a+c.height,0)+gap*(cv.length-1);const o=document.createElement("canvas");o.width=w;o.height=h;const x=o.getContext("2d");x.fillStyle="#9aa3ad";x.fillRect(0,0,w,h);let y=0;cv.forEach(c=>{x.drawImage(c,0,y);y+=c.height+gap});
+      await saveFile(name+".png",await new Promise(r=>o.toBlob(r,"image/png")))}
+    else{if(!window.jspdf)throw new Error("lib");const pdf=new window.jspdf.jsPDF({orientation:"p",unit:"mm",format:"a4"});cv.forEach((c,i)=>{if(i)pdf.addPage();pdf.addImage(c.toDataURL("image/jpeg",.93),"JPEG",0,0,210,297)});
+      if(await saveFile(name+".pdf",pdf.output("blob")))toast("PDF A4 tersimpan. Buka file lalu tekan Print (Ctrl+P).",4500)}
+  }catch(e){toast(e&&e.message==="lib"?"Pustaka ekspor belum termuat. Periksa internet lalu coba lagi.":"Gagal membuat file. Coba lagi.")}
+  finally{buildStage("lkt")}
+}
+async function exportResult(){
+  const s=DATA.settings,r=ranked();const st=$("#stage");
+  st.innerHTML=`<div class="page dark" style="height:auto;min-height:0;padding-bottom:30px"><div class="dhead"><div><h1>${esc(s.appName)}</h1><div class="s">${esc([s.mapel,s.tema,s.target].filter(Boolean).join(" · "))}</div></div><span class="tag">Hasil Arena · ${new Date().toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"})}</span></div>
+    <div style="display:grid;gap:8px;margin-top:8px">${r.map((t,k)=>`<div style="display:grid;grid-template-columns:50px 1fr 110px 120px;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:#0b1f1a;border:1px solid #2f4a42;border-left:6px solid ${t.c}"><span style="font-family:var(--display);font-size:26px;color:#f2c14e">${k+1}</span><span style="font-weight:800;font-size:18px">${esc(t.n)}</span><span style="color:#9fc7b8">${t.ok} vault</span><span style="font-family:var(--mono);font-weight:700;font-size:22px;text-align:right;color:#35e6d8">${t.s} PTS</span></div>`).join("")}</div>
+    <div class="dfoot" style="margin-top:18px"><span>${esc(s.sekolah||"")} · Guru: ${esc(s.guru||"")}</span><span>${G.vaults.filter(Boolean).length}/30 vault terbuka</span></div></div>`;
+  try{const [c]=await capture([st.firstElementChild]);await saveFile(`${slug()}-hasil.png`,await new Promise(r=>c.toBlob(r,"image/png")))}catch(e){toast("Gagal membuat gambar. Periksa internet lalu coba lagi.")}
+  finally{buildStage("lkt")}
+}
+
+/* ---- editor ---- */
+function renderEditor(){
+  const s=DATA.settings;
+  $("#editor").innerHTML=`<div class="ed">
+   <div style="display:grid;gap:14px">
+    <div class="panel"><h3>Identitas aplikasi</h3>
+      <div><label class="lbl" for="e_appName">Nama aplikasi</label><input id="e_appName" data-s="appName"></div>
+      <div class="two"><div><label class="lbl" for="e_mapel">Mata pelajaran</label><input id="e_mapel" data-s="mapel"></div><div><label class="lbl" for="e_tema">Tema / materi</label><input id="e_tema" data-s="tema"></div></div>
+      <div class="two"><div><label class="lbl" for="e_target">Target pengguna</label><input id="e_target" data-s="target"></div><div><label class="lbl" for="e_sekolah">Sekolah</label><input id="e_sekolah" data-s="sekolah"></div></div>
+      <div><label class="lbl" for="e_guru">Dikembangkan oleh guru</label><input id="e_guru" data-s="guru"></div>
+      <div><label class="lbl" for="e_pin">Password guru</label><input id="e_pin" data-s="pin" inputmode="numeric" style="font-family:var(--mono);max-width:160px"></div>
+    </div>
+    <div class="panel" id="aiBox" ${SAMPLE?"":"hidden"}><h3>Buat 30 soal otomatis</h3>
+      <p class="hint" style="margin:0">Tulis topik materi, lalu Claude membuat 30 soal beserta password. Soal lama diganti. Periksa hasilnya sebelum dipakai.</p>
+      <input id="aiTopic" placeholder="mis. Interaksi Sosial kelas VIII" value="${esc(s.tema||"")}">
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn cyan sm" id="aiGo">Buat 30 soal</button><button type="button" class="btn sm" id="aiStop" hidden>Hentikan</button></div>
+      <div class="ai-out" id="aiOut"></div>
+    </div>
+    <div class="panel"><h3>Cadangan soal</h3>
+      <p class="hint" style="margin:0">Soal tersimpan otomatis di browser ini. Unduh cadangan untuk dipakai di perangkat lain.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="bkOut">Unduh cadangan (.json)</button><label class="btn sm" style="cursor:pointer">Muat cadangan<input type="file" id="bkIn" accept=".json,application/json" hidden></label></div>
+      <span id="rsWrap"><button type="button" class="btn sm" id="rsBtn">Kembalikan 30 soal contoh</button></span>
+    </div>
+   </div>
+   <div class="panel"><h3>30 soal &amp; kunci jawaban (password)</h3>
+     <p class="hint" style="margin:0">Vault 1–10 Mudah (100), 11–20 Sedang (200), 21–30 Sulit (300). Tipe <b>Biner</b> memunculkan keypad 0/1; tipe lain memunculkan keyboard lengkap. Jawaban alternatif dipisah titik koma ( ; ). Huruf besar/kecil, spasi, dan tanda baca diabaikan saat dicocokkan.</p>
+     <div class="qhead"><span>Vault</span><span>Soal</span><span>Tipe</span><span>Kunci / password</span></div>
+     <div class="qlist" id="qlist"></div>
+   </div></div>`;
+  $$("[data-s]").forEach(el=>{el.value=s[el.dataset.s]??"";el.oninput=()=>{s[el.dataset.s]=el.value;saveData();renderBrand()}});
+  renderQList();
+  $("#bkOut").onclick=()=>saveFile(`${slug()}-soal.json`,new Blob([JSON.stringify(DATA,null,1)],{type:"application/json"}));
+  $("#bkIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.soal))throw 0;DATA=d;fixData();saveData();renderBrand();renderEditor();toast("Cadangan dimuat: 30 soal")}catch(err){toast("File tidak dikenali. Pilih file cadangan .json dari aplikasi ini.")}};r.readAsText(f);e.target.value=""};
+  $("#rsBtn").onclick=()=>{const w=$("#rsWrap");w.innerHTML=`<span class="inline-confirm">Ganti semua soal dengan contoh? <button type="button" class="btn red sm" id="rsY">Ya</button><button type="button" class="btn sm" id="rsN">Batal</button></span>`;
+    $("#rsY").onclick=()=>{DATA=clone(DEFAULT_DATA);saveData();renderBrand();renderEditor();toast("Soal contoh dikembalikan")};$("#rsN").onclick=renderEditor};
+  const go=$("#aiGo");if(go)go.onclick=generateAI;
+}
+function renderQList(){
+  $("#qlist").innerHTML=DATA.soal.map((q,i)=>`<div class="qrow l${level(i)}">
+    <div class="no">#${String(i+1).padStart(2,"0")}<small>${points(i)} PTS</small></div>
+    <textarea data-i="${i}" data-f="q" aria-label="Soal vault ${i+1}">${esc(q.q)}</textarea>
+    <select data-i="${i}" data-f="tipe" aria-label="Tipe password vault ${i+1}">${Object.entries(TYPE_LABEL).map(([k,v])=>`<option value="${k}" ${q.tipe===k?"selected":""}>${v}</option>`).join("")}</select>
+    <div class="kc"><input data-i="${i}" data-f="kunci" value="${esc(q.kunci)}" aria-label="Kunci vault ${i+1}"><div class="hint" id="kw${i}"></div></div></div>`).join("");
+  $$("#qlist [data-f]").forEach(el=>{const ev=el.tagName==="SELECT"?"change":"input";el.addEventListener(ev,()=>{const q=DATA.soal[+el.dataset.i];q[el.dataset.f]=el.value;saveData();warnKey(+el.dataset.i)})});
+  DATA.soal.forEach((_,i)=>warnKey(i));
+}
+function warnKey(i){const q=DATA.soal[i],w=$("#kw"+i);if(!w)return;const keys=q.kunci.split(";").map(norm).filter(Boolean);
+  w.textContent=!keys.length?"⚠ Kunci masih kosong":q.tipe==="biner"&&keys.some(k=>/[^01]/.test(k))?"⚠ Tipe biner hanya boleh 0 dan 1":"";w.style.color="var(--gold)"}
+let aiCtl=null;
+async function generateAI(){
+  if(!SAMPLE)return;const topic=$("#aiTopic").value.trim();if(!topic){toast("Tulis topik materi dulu");return}
+  const s=DATA.settings;aiCtl=new AbortController();$("#aiGo").disabled=true;$("#aiStop").hidden=false;$("#aiStop").onclick=()=>aiCtl.abort();
+  $("#aiOut").textContent="Claude sedang menyusun 30 soal… (bisa 30–90 detik)";
+  const prompt=`Kamu guru ${s.mapel||"IPS"} untuk ${s.target||"siswa SMP"} di Indonesia (Kurikulum Merdeka). Buat TEPAT 30 soal tentang: "${topic}".
+Setiap soal jawabannya adalah PASSWORD singkat yang diketik siswa di layar. Aturan:
+- Soal 1-10 mudah, 11-20 sedang, 21-30 sulit.
+- "tipe" salah satu: "kata" (1 kata), "kalimat" (2-4 kata), "angka" (bilangan desimal), "biner" (hanya digit 0 dan 1; misalnya 4 pernyataan benar=1/salah=0 berurutan, atau konversi bilangan ke biner).
+- Minimal 3 soal biner di soal 21-30. Pernyataan biner ditulis di baris baru dengan (a), (b), (c), (d).
+- "kunci" = jawaban utama; jika ada jawaban lain yang setara pisahkan dengan titik koma.
+- Fakta harus akurat dan sesuai buku IPS SMP. Bahasa Indonesia baku, soal maksimal 45 kata.
+Balas HANYA dengan JSON array berisi 30 objek {"q": string, "tipe": string, "kunci": string}.`;
+  try{const arr=await SAMPLE.json(prompt,{signal:aiCtl.signal,cache:false});
+    if(!Array.isArray(arr)||arr.length<30)throw {code:"short"};
+    DATA.soal=arr.slice(0,30);s.tema=topic;fixData();saveData();renderBrand();renderEditor();$("#aiOut").textContent="30 soal baru sudah dibuat. Periksa kunci jawabannya sebelum mencetak.";}
+  catch(e){const c=e&&e.code;const msg={cancelled:"Dihentikan.",not_granted:"Izin memakai Claude tidak diberikan.",rate_limited:"Terlalu banyak permintaan. Coba lagi nanti.",short:"Hasil kurang dari 30 soal. Coba lagi.",invalid_json:"Format hasil tidak terbaca. Coba lagi."}[c]||"Gagal membuat soal. Coba lagi.";
+    if($("#aiOut"))$("#aiOut").textContent=msg;if(c==="not_granted"||c==="sampling_disabled"){const b=$("#aiBox");if(b)b.hidden=true}}
+  finally{if($("#aiGo")){$("#aiGo").disabled=false;$("#aiStop").hidden=true}}
+}
+
+/* ================= KEYBOARD SHORTCUTS ================= */
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#fx").hidden){$("#fx").click();return}if(!ov.hidden)closeModal()}});
+
+/* ================= INIT ================= */
+$("#emblemBig").innerHTML=emblemSVG();$("#emblemSmall").innerHTML=emblemSVG().replace(/id="(mt|gm|gd)"/g,'id="$1s"').replace(/url\(#(mt|gm|gd)\)/g,"url(#$1s)");
+renderBrand();renderTeamInputs();renderMusicBtn();renderPause();buildStage("lkt");
+</script>
