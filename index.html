@@ -284,6 +284,7 @@ html.exporting,html.exporting body{overflow:visible;height:auto}
         <div><span class="lbl">Jumlah tim</span>
           <div class="stepper"><button type="button" onclick="changeTeams(-1)" aria-label="Kurangi tim">−</button><output id="teamCount">4</output><button type="button" onclick="changeTeams(1)" aria-label="Tambah tim">+</button></div>
           <div class="hint">2 sampai 6 tim</div></div>
+        <div><label class="lbl" for="paketSel">Paket soal</label><select id="paketSel" onchange="setPaket(this.value)"></select></div>
         <div><label class="lbl" for="duration">Durasi (menit)</label><input id="duration" type="number" min="1" max="180" value="15" style="font-family:var(--mono);font-size:22px;font-weight:700;max-width:120px"></div>
       </div>
       <div style="display:grid;gap:10px;align-content:start">
@@ -370,8 +371,162 @@ html.exporting,html.exporting body{overflow:visible;height:auto}
    kunci: pisahkan jawaban alternatif dengan titik koma (;)
    ========================================================= */
 const DEFAULT_DATA={
-  settings:{appName:"CIPHER VAULT ARENA",mapel:"Ilmu Pengetahuan Sosial",tema:"Interaksi Sosial",target:"Siswa Kelas VIII SMP",guru:"Khotimmatul Anwariyah, S.Pd., Gr.",sekolah:"SMP 9 Bandung",pin:"1234"},
-  soal:[
+  settings:{"appName": "CIPHER VAULT ARENA", "mapel": "Ilmu Pengetahuan Sosial", "tema": "Interaksi Sosial", "target": "Siswa Kelas VIII SMP", "guru": "Khotimmatul Anwariyah, S.Pd., Gr.", "sekolah": "SRMP 9 Bandung", "pin": "1234"},
+  aktif:0,
+  pakets:[
+  {nama:"Paket 1 · Interaksi Sosial (soal guru)",soal:[
+   {
+   "q": "Siapa sosiolog yang mendefinisikan interaksi sosial sebagai hubungan antara individu dan individu, individu dan kelompok, serta kelompok dan kelompok?",
+   "tipe": "kalimat",
+   "kunci": "GILLIN DAN GILLIN"
+   },
+   {
+   "q": "Sebutkan dua syarat terjadinya interaksi sosial!",
+   "tipe": "kalimat",
+   "kunci": "KONTAK SOSIAL DAN KOMUNIKASI"
+   },
+   {
+   "q": "Interaksi sosial positif yang mengarah pada kesatuan disebut interaksi ...",
+   "tipe": "kata",
+   "kunci": "ASOSIATIF"
+   },
+   {
+   "q": "Interaksi sosial yang berujung pada perpecahan disebut interaksi ...",
+   "tipe": "kata",
+   "kunci": "DISOSIATIF"
+   },
+   {
+   "q": "Tawar-menawar di pasar tradisional termasuk bentuk kerja sama yang disebut ...",
+   "tipe": "kata",
+   "kunci": "BARGAINING"
+   },
+   {
+   "q": "Apa istilah lain dari persaingan?",
+   "tipe": "kata",
+   "kunci": "KOMPETISI"
+   },
+   {
+   "q": "Bentuk akomodasi berupa sikap menerima dan menghormati perbedaan disebut ...",
+   "tipe": "kata",
+   "kunci": "TOLERANSI; TOLERATION"
+   },
+   {
+   "q": "Apa kegiatan utama dalam interaksi sosial asosiatif?",
+   "tipe": "kata",
+   "kunci": "KERJASAMA"
+   },
+   {
+   "q": "Musik apa yang lahir dari perpaduan musik India dan musik Melayu?",
+   "tipe": "kata",
+   "kunci": "DANGDUT"
+   },
+   {
+   "q": "Apa istilah bahasa Inggris untuk pertentangan?",
+   "tipe": "kata",
+   "kunci": "CONFLICT"
+   },
+   {
+   "q": "Penggabungan dua organisasi atau lebih untuk mencapai tujuan bersama, misalnya partai politik saat pemilu, disebut ...",
+   "tipe": "kata",
+   "kunci": "KOALISI; COALITION"
+   },
+   {
+   "q": "Kerja sama dalam pendirian atau penyelesaian proyek tertentu disebut ...",
+   "tipe": "kalimat",
+   "kunci": "JOINT VENTURE"
+   },
+   {
+   "q": "Pemerintah merangkul organisasi lingkungan untuk membuat kebijakan bersama. Bentuk kerja sama ini disebut ...",
+   "tipe": "kata",
+   "kunci": "KOOPTASI; COOPTATION"
+   },
+   {
+   "q": "Bentuk akomodasi yang dilaksanakan dengan paksaan disebut ...",
+   "tipe": "kata",
+   "kunci": "KOERSI; COERCION"
+   },
+   {
+   "q": "Penyelesaian masalah melalui pihak ketiga netral yang berwenang mengambil keputusan disebut ...",
+   "tipe": "kata",
+   "kunci": "ARBITRASE; ARBITRATION"
+   },
+   {
+   "q": "Penyelesaian sengketa dengan pihak ketiga yang hanya menjadi perantara disebut ...",
+   "tipe": "kata",
+   "kunci": "MEDIASI; MEDIATION"
+   },
+   {
+   "q": "Penyelesaian sengketa melalui jalur pengadilan disebut ...",
+   "tipe": "kata",
+   "kunci": "AJUDIKASI"
+   },
+   {
+   "q": "Warga bersepakat bergiliran berbagi air untuk mengairi sawah. Ini contoh akomodasi bentuk ...",
+   "tipe": "kata",
+   "kunci": "TOLERANSI; TOLERATION"
+   },
+   {
+   "q": "Proses sosial yang berada di antara persaingan dan konflik disebut ...",
+   "tipe": "kata",
+   "kunci": "KONTRAVENSI"
+   },
+   {
+   "q": "Kementerian apa yang bekerja sama dengan Belanda dalam pengelolaan sumber daya air sejak 2001?",
+   "tipe": "kalimat",
+   "kunci": "KEMENTERIAN PUPR"
+   },
+   {
+   "q": "Pertemuan dua kebudayaan yang menghasilkan kebudayaan baru dengan meninggalkan sifat aslinya disebut ...",
+   "tipe": "kata",
+   "kunci": "ASIMILASI"
+   },
+   {
+   "q": "Transmigran Jawa membawa cara mengolah lahan ke Sumatra tanpa menghilangkan budaya asli penerima. Proses ini disebut ...",
+   "tipe": "kata",
+   "kunci": "AKULTURASI"
+   },
+   {
+   "q": "Konflik pemilik tambak udang dan aktivis lingkungan diselesaikan dengan pemda sebagai perantara. Apa bentuk akomodasinya?",
+   "tipe": "kata",
+   "kunci": "MEDIASI; MEDIATION"
+   },
+   {
+   "q": "Petani memprotes jalan tol yang melewati sawahnya. Termasuk bentuk interaksi apa?",
+   "tipe": "kata",
+   "kunci": "PERTENTANGAN; KONFLIK SOSIAL"
+   },
+   {
+   "q": "Sebutkan tiga penyebab meningkatnya persaingan memperebutkan SDA!",
+   "tipe": "kalimat",
+   "kunci": "BERTAMBAHNYA PENDUDUK DUNIA, MENINGKATNYA KEGIATAN EKONOMI, PERUBAHAN GAYA HIDUP"
+   },
+   {
+   "q": "Usaha mempertemukan pihak yang berselisih dengan bantuan pihak ketiga yang keputusannya tidak mengikat disebut ...",
+   "tipe": "kata",
+   "kunci": "KONSILIASI; CONCILIATION"
+   },
+   {
+   "q": "Sebutkan lima macam kontravensi!",
+   "tipe": "kalimat",
+   "kunci": "UMUM, SEDERHANA, INTENSIF, RAHASIA, TAKTIS; KONTRAVENSI UMUM, KONTRAVENSI SEDERHANA, KONTRAVENSI INTENSIF, KONTRAVENSI RAHASIA, KONTRAVENSI TAKTIS"
+   },
+   {
+   "q": "Lembaga riset Indonesia yang menjajaki kerja sama dengan CarbonEthics dalam riset silvofishery adalah ...",
+   "tipe": "kata",
+   "kunci": "BRIN; BADAN RISET DAN INOVASI NASIONAL"
+   },
+   {
+   "q": "Apa tujuan kerja sama riset silvofishery bagi masyarakat pesisir?",
+   "tipe": "kalimat",
+   "kunci": "UNTUK MENGEMBANGKAN POTENSI SERAPAN KARBON BERSAMAAN DENGAN MENINGKATKAN ASPEK EKONOMI DAN BISNIS MASYARAKAT PESISIR"
+   },
+   {
+   "q": "Apa perbedaan utama asimilasi dan akulturasi?",
+   "tipe": "kalimat",
+   "kunci": "ASIMILASI BUDAYA LAMA BERUBAH, AKULTURASI BUDAYA LAMA DIPERTAHANKAN"
+   }
+   ]},
+  {nama:"Paket 2 · Interaksi Sosial (soal contoh)",soal:[
    {q:"Hubungan timbal balik antara individu dengan individu, individu dengan kelompok, atau kelompok dengan kelompok disebut interaksi …",tipe:"kata",kunci:"SOSIAL"},
    {q:"Ada berapa syarat terjadinya interaksi sosial? (tulis dengan angka)",tipe:"angka",kunci:"2"},
    {q:"Syarat interaksi sosial berupa hubungan antara dua pihak, baik secara langsung maupun tidak langsung, disebut …",tipe:"kata",kunci:"KONTAK;KONTAK SOSIAL"},
@@ -402,6 +557,7 @@ const DEFAULT_DATA={
    {q:"Semboyan bangsa Indonesia yang mengajarkan persatuan dalam keberagaman interaksi sosial adalah … (3 kata)",tipe:"kalimat",kunci:"BHINNEKA TUNGGAL IKA"},
    {q:"Penerimaan unsur-unsur baru dalam kepemimpinan suatu organisasi untuk menghindari konflik disebut …",tipe:"kata",kunci:"KOOPTASI"},
    {q:"Proses disosiatif ada 3: persaingan, kontravensi, dan pertentangan. Ubah angka 3 menjadi bilangan BINER.",tipe:"biner",kunci:"11"}
+  ]}
   ]};
 const TYPE_LABEL={kata:"Kata",kalimat:"Kalimat",angka:"Angka",biner:"Biner"};
 const TEAM_COLORS=["#00f2fe","#ffb703","#ff4d8d","#10d98a","#b04dff","#ff7a3d"];
@@ -409,11 +565,17 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store={get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-let DATA=store.get("cva3-data")||clone(DEFAULT_DATA);
-function fixData(){DATA.settings={...DEFAULT_DATA.settings,...(DATA.settings||{})};const s=Array.isArray(DATA.soal)?DATA.soal:[];
-  DATA.soal=Array.from({length:30},(_,i)=>{const x=s[i]||{};return {q:String(x.q||""),tipe:TYPE_LABEL[x.tipe]?x.tipe:"kata",kunci:String(x.kunci||"")}})}
+let DATA=store.get("cva4-data")||clone(DEFAULT_DATA);
+const fixSoal=s=>{s=Array.isArray(s)?s:[];return Array.from({length:30},(_,i)=>{const x=s[i]||{};return {q:String(x.q||""),tipe:TYPE_LABEL[x.tipe]?x.tipe:"kata",kunci:String(x.kunci||"")}})};
+function fixData(){DATA.settings={...DEFAULT_DATA.settings,...(DATA.settings||{})};
+  if(!Array.isArray(DATA.pakets)||!DATA.pakets.length)DATA.pakets=[{nama:"Paket 1",soal:DATA.soal||[]}];
+  DATA.pakets=DATA.pakets.map((p,i)=>({nama:String(p.nama||("Paket "+(i+1))),soal:fixSoal(p.soal)}));
+  DATA.aktif=Math.min(Math.max(0,+DATA.aktif||0),DATA.pakets.length-1);
+  DATA.soal=DATA.pakets[DATA.aktif].soal}
 fixData();
-const saveData=()=>store.set("cva3-data",DATA);
+const saveData=()=>store.set("cva4-data",{settings:DATA.settings,aktif:DATA.aktif,pakets:DATA.pakets});
+function setPaket(i){DATA.aktif=+i;DATA.soal=DATA.pakets[DATA.aktif].soal;saveData();renderBrand();renderPaketSel()}
+function renderPaketSel(){const el=document.getElementById("paketSel");if(!el)return;el.innerHTML=DATA.pakets.map((p,i)=>`<option value="${i}" ${i===DATA.aktif?"selected":""}>${esc(p.nama)}</option>`).join("")}
 const level=i=>i<10?1:i<20?2:3, points=i=>level(i)*100;
 const norm=s=>String(s||"").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z0-9]/g,"");
 const keyMain=k=>String(k||"").split(";")[0].trim();
@@ -733,8 +895,14 @@ function renderEditor(){
       <div><label class="lbl" for="e_guru">Dikembangkan oleh guru</label><input id="e_guru" data-s="guru"></div>
       <div><label class="lbl" for="e_pin">Password guru</label><input id="e_pin" data-s="pin" inputmode="numeric" style="font-family:var(--mono);max-width:160px"></div>
     </div>
+    <div class="panel"><h3>Paket soal</h3>
+      <p class="hint" style="margin:0">Setiap paket berisi 30 soal. Paket yang dipilih di sini dipakai di arena dan lembar cetak.</p>
+      <div><label class="lbl" for="edPaket">Paket aktif</label><select id="edPaket">${DATA.pakets.map((p,i)=>`<option value="${i}" ${i===DATA.aktif?"selected":""}>${esc(p.nama)}</option>`).join("")}</select></div>
+      <div><label class="lbl" for="edPaketNama">Nama paket</label><input id="edPaketNama" value="${esc(DATA.pakets[DATA.aktif].nama)}"></div>
+      <span id="pkWrap" style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="pkAdd">+ Paket baru (salinan)</button>${DATA.pakets.length>1?'<button type="button" class="btn sm" id="pkDel">Hapus paket ini</button>':""}</span>
+    </div>
     <div class="panel" id="aiBox" ${SAMPLE?"":"hidden"}><h3>Buat 30 soal otomatis</h3>
-      <p class="hint" style="margin:0">Tulis topik materi, lalu Claude membuat 30 soal beserta password. Soal lama diganti. Periksa hasilnya sebelum dipakai.</p>
+      <p class="hint" style="margin:0">Tulis topik materi, lalu Claude membuat 30 soal beserta password. Soal di paket aktif diganti. Periksa hasilnya sebelum dipakai.</p>
       <input id="aiTopic" placeholder="mis. Interaksi Sosial kelas VIII" value="${esc(s.tema||"")}">
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn cyan sm" id="aiGo">Buat 30 soal</button><button type="button" class="btn sm" id="aiStop" hidden>Hentikan</button></div>
       <div class="ai-out" id="aiOut"></div>
@@ -742,7 +910,7 @@ function renderEditor(){
     <div class="panel"><h3>Cadangan soal</h3>
       <p class="hint" style="margin:0">Soal tersimpan otomatis di browser ini. Unduh cadangan untuk dipakai di perangkat lain.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm" id="bkOut">Unduh cadangan (.json)</button><label class="btn sm" style="cursor:pointer">Muat cadangan<input type="file" id="bkIn" accept=".json,application/json" hidden></label></div>
-      <span id="rsWrap"><button type="button" class="btn sm" id="rsBtn">Kembalikan 30 soal contoh</button></span>
+      <span id="rsWrap"><button type="button" class="btn sm" id="rsBtn">Kembalikan paket soal bawaan</button></span>
     </div>
    </div>
    <div class="panel"><h3>30 soal &amp; kunci jawaban (password)</h3>
@@ -750,12 +918,17 @@ function renderEditor(){
      <div class="qhead"><span>Vault</span><span>Soal</span><span>Tipe</span><span>Kunci / password</span></div>
      <div class="qlist" id="qlist"></div>
    </div></div>`;
+  $("#edPaket").onchange=e=>{setPaket(e.target.value);renderEditor()};
+  $("#edPaketNama").oninput=e=>{DATA.pakets[DATA.aktif].nama=e.target.value;saveData();renderPaketSel()};
+  $("#pkAdd").onclick=()=>{DATA.pakets.push({nama:"Paket "+(DATA.pakets.length+1),soal:clone(DATA.soal)});setPaket(DATA.pakets.length-1);renderEditor();toast("Paket baru dibuat dari salinan paket aktif")};
+  const pd=$("#pkDel");if(pd)pd.onclick=()=>{const w=$("#pkWrap");w.innerHTML=`<span class="inline-confirm">Hapus "${esc(DATA.pakets[DATA.aktif].nama)}"? <button type="button" class="btn red sm" id="pkY">Ya</button><button type="button" class="btn sm" id="pkN">Batal</button></span>`;
+    $("#pkY").onclick=()=>{DATA.pakets.splice(DATA.aktif,1);setPaket(0);renderEditor();toast("Paket dihapus")};$("#pkN").onclick=renderEditor};
   $$("[data-s]").forEach(el=>{el.value=s[el.dataset.s]??"";el.oninput=()=>{s[el.dataset.s]=el.value;saveData();renderBrand()}});
   renderQList();
   $("#bkOut").onclick=()=>saveFile(`${slug()}-soal.json`,new Blob([JSON.stringify(DATA,null,1)],{type:"application/json"}));
-  $("#bkIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.soal))throw 0;DATA=d;fixData();saveData();renderBrand();renderEditor();toast("Cadangan dimuat: 30 soal")}catch(err){toast("File tidak dikenali. Pilih file cadangan .json dari aplikasi ini.")}};r.readAsText(f);e.target.value=""};
-  $("#rsBtn").onclick=()=>{const w=$("#rsWrap");w.innerHTML=`<span class="inline-confirm">Ganti semua soal dengan contoh? <button type="button" class="btn red sm" id="rsY">Ya</button><button type="button" class="btn sm" id="rsN">Batal</button></span>`;
-    $("#rsY").onclick=()=>{DATA=clone(DEFAULT_DATA);saveData();renderBrand();renderEditor();toast("Soal contoh dikembalikan")};$("#rsN").onclick=renderEditor};
+  $("#bkIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d.pakets)){DATA=d;fixData();saveData();toast("Cadangan dimuat: "+DATA.pakets.length+" paket soal")}else if(Array.isArray(d.soal)){DATA.pakets.push({nama:"Paket "+(DATA.pakets.length+1)+" · "+((d.settings&&d.settings.tema)||"impor"),soal:fixSoal(d.soal)});setPaket(DATA.pakets.length-1);saveData();toast("30 soal ditambahkan sebagai paket baru")}else throw 0;renderBrand();renderPaketSel();renderEditor()}catch(err){toast("File tidak dikenali. Pilih file cadangan .json dari aplikasi ini.")}};r.readAsText(f);e.target.value=""};
+  $("#rsBtn").onclick=()=>{const w=$("#rsWrap");w.innerHTML=`<span class="inline-confirm">Ganti semua paket dengan paket bawaan? <button type="button" class="btn red sm" id="rsY">Ya</button><button type="button" class="btn sm" id="rsN">Batal</button></span>`;
+    $("#rsY").onclick=()=>{DATA=clone(DEFAULT_DATA);fixData();saveData();renderPaketSel();renderBrand();renderEditor();toast("Soal contoh dikembalikan")};$("#rsN").onclick=renderEditor};
   const go=$("#aiGo");if(go)go.onclick=generateAI;
 }
 function renderQList(){
@@ -784,7 +957,7 @@ Setiap soal jawabannya adalah PASSWORD singkat yang diketik siswa di layar. Atur
 Balas HANYA dengan JSON array berisi 30 objek {"q": string, "tipe": string, "kunci": string}.`;
   try{const arr=await SAMPLE.json(prompt,{signal:aiCtl.signal,cache:false});
     if(!Array.isArray(arr)||arr.length<30)throw {code:"short"};
-    DATA.soal=arr.slice(0,30);s.tema=topic;fixData();saveData();renderBrand();renderEditor();$("#aiOut").textContent="30 soal baru sudah dibuat. Periksa kunci jawabannya sebelum mencetak.";}
+    DATA.pakets[DATA.aktif].soal=arr;s.tema=topic;fixData();saveData();renderBrand();renderEditor();$("#aiOut").textContent="30 soal baru sudah dibuat. Periksa kunci jawabannya sebelum mencetak.";}
   catch(e){const c=e&&e.code;const msg={cancelled:"Dihentikan.",not_granted:"Izin memakai Claude tidak diberikan.",rate_limited:"Terlalu banyak permintaan. Coba lagi nanti.",short:"Hasil kurang dari 30 soal. Coba lagi.",invalid_json:"Format hasil tidak terbaca. Coba lagi."}[c]||"Gagal membuat soal. Coba lagi.";
     if($("#aiOut"))$("#aiOut").textContent=msg;if(c==="not_granted"||c==="sampling_disabled"){const b=$("#aiBox");if(b)b.hidden=true}}
   finally{if($("#aiGo")){$("#aiGo").disabled=false;$("#aiStop").hidden=true}}
@@ -795,5 +968,5 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#fx").hidden
 
 /* ================= INIT ================= */
 $("#emblemBig").innerHTML=emblemSVG();$("#emblemSmall").innerHTML=emblemSVG().replace(/id="(mt|gm|gd)"/g,'id="$1s"').replace(/url\(#(mt|gm|gd)\)/g,"url(#$1s)");
-renderBrand();renderTeamInputs();renderMusicBtn();renderPause();buildStage("lkt");
+renderBrand();renderPaketSel();renderTeamInputs();renderMusicBtn();renderPause();buildStage("lkt");
 </script>
